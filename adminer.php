@@ -73,4 +73,6 @@ document.addEventListener("DOMContentLoaded", function() {
 $html = str_replace('<title>Adminer</title>', '<title>⚡ BAYYZ DB Manager</title>', $html);
 $html = str_replace('</head>', $css . '</head>', $html);
 $html = str_replace('</body>', $js . '</body>', $html);
+// DEBUG - lihat HTML mentah
+file_put_contents('/home/container/debug_adminer.html', $html);
 echo $html;
