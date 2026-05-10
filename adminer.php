@@ -1,6 +1,6 @@
 <?php
 // BAYYZ DB Manager - Cyber Neon Theme
-// Auto server = 172.18.0.1, hidden dari user
+// Fixed: no redirect loop
 
 $core = sys_get_temp_dir() . "/adminer_latest.php";
 if (!file_exists($core) || (time() - filemtime($core)) > 86400) {
@@ -11,12 +11,9 @@ if (!file_exists($core)) {
     die("<h2 style='color:red;font-family:monospace'>Gagal load Adminer. Cek koneksi.</h2>");
 }
 
-// Force server ke 172.18.0.1 via $_GET/$_POST
-if (empty($_GET['server'])) $_GET['server'] = '172.18.0.1';
-if (empty($_POST['auth']['server'])) $_POST['auth']['server'] = '172.18.0.1';
-if (!isset($_SERVER['QUERY_STRING']) || strpos($_SERVER['QUERY_STRING'], 'server=') === false) {
-    $_SERVER['QUERY_STRING'] = 'server=172.18.0.1&' . ($_SERVER['QUERY_STRING'] ?? '');
-}
+// Force server tanpa manipulasi QUERY_STRING
+$_GET['server'] = '172.18.0.1';
+$_POST['auth']['server'] = '172.18.0.1';
 
 ob_start();
 require $core;
@@ -53,27 +50,27 @@ span.null{color:rgba(255,0,255,.5)!important;font-style:italic!important}
 ::-webkit-scrollbar-thumb{background:rgba(0,255,255,.3);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(0,255,255,.6)}
 #footer{color:var(--td)!important;border-top:1px solid rgba(0,255,255,.1)!important;padding:10px!important;font-size:11px!important;text-align:center!important}
-
-/* Hide server field - IP tidak keliatan user */
-tr:has(td label[for=auth-server]) { display: none !important; }
-input#auth-server { display: none !important; }
-td:has(input#auth-server) { display: none !important; }
 </style>';
 
-// JS untuk force hide server row dan set value
 $js = '<script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Hide semua row yang ada label/input server
-    var inputs = document.querySelectorAll("input[name=\'auth[server]\']");
-    inputs.forEach(function(el) {
+    // Force & hide server field
+    var serverInputs = document.querySelectorAll("input[name=\'auth[server]\']");
+    serverInputs.forEach(function(el) {
         el.value = "172.18.0.1";
-        var row = el.closest("tr");
-        if (row) row.style.display = "none";
+        el.type = "hidden";
+        var tr = el.closest("tr");
+        if (tr) tr.style.display = "none";
     });
-
-    // Ganti label "Masuk" jadi BAYYZ branding
+    // Branding
     var h1 = document.querySelector("h1");
-    if (h1) h1.innerHTML = "⚡ BAYYZ DB Manager";
+    if (h1) h1.innerHTML = "&#9889; BAYYZ DB Manager";
+    // Fix semua link yang ada server= di URL supaya tetap pakai 172.18.0.1
+    document.querySelectorAll("a").forEach(function(a) {
+        if (a.href && a.href.indexOf("server=") === -1) {
+            a.href = a.href + (a.href.indexOf("?") === -1 ? "?" : "&") + "server=172.18.0.1";
+        }
+    });
 });
 </script>';
 
