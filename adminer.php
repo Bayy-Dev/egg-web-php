@@ -1,6 +1,6 @@
 <?php
 // BAYYZ DB Manager - Cyber Neon Theme
-// Fixed: no redirect loop
+// Server field hidden via CSS/JS only - no PHP redirect
 
 $core = sys_get_temp_dir() . "/adminer_latest.php";
 if (!file_exists($core) || (time() - filemtime($core)) > 86400) {
@@ -10,10 +10,6 @@ if (!file_exists($core) || (time() - filemtime($core)) > 86400) {
 if (!file_exists($core)) {
     die("<h2 style='color:red;font-family:monospace'>Gagal load Adminer. Cek koneksi.</h2>");
 }
-
-// Force server tanpa manipulasi QUERY_STRING
-$_GET['server'] = '172.18.0.1';
-$_POST['auth']['server'] = '172.18.0.1';
 
 ob_start();
 require $core;
@@ -54,21 +50,23 @@ span.null{color:rgba(255,0,255,.5)!important;font-style:italic!important}
 
 $js = '<script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Force & hide server field
-    var serverInputs = document.querySelectorAll("input[name=\'auth[server]\']");
-    serverInputs.forEach(function(el) {
-        el.value = "172.18.0.1";
-        el.type = "hidden";
-        var tr = el.closest("tr");
-        if (tr) tr.style.display = "none";
-    });
     // Branding
     var h1 = document.querySelector("h1");
     if (h1) h1.innerHTML = "&#9889; BAYYZ DB Manager";
-    // Fix semua link yang ada server= di URL supaya tetap pakai 172.18.0.1
-    document.querySelectorAll("a").forEach(function(a) {
-        if (a.href && a.href.indexOf("server=") === -1) {
-            a.href = a.href + (a.href.indexOf("?") === -1 ? "?" : "&") + "server=172.18.0.1";
+
+    // Hide & force server field
+    var serverInput = document.querySelector("input[name=\'auth[server]\']");
+    if (serverInput) {
+        serverInput.value = "172.18.0.1";
+        var tr = serverInput.closest("tr");
+        if (tr) tr.style.cssText = "display:none!important";
+    }
+
+    // Hide label "Server" juga
+    document.querySelectorAll("td, th").forEach(function(el) {
+        if (el.textContent.trim() === "Server") {
+            var tr = el.closest("tr");
+            if (tr) tr.style.cssText = "display:none!important";
         }
     });
 });
