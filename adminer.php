@@ -14,19 +14,15 @@ ob_start();
 require $core;
 $html = ob_get_clean();
 
-// ===== HIDE SERVER FIELD VIA PHP =====
-// Ganti input server jadi hidden dengan value 172.18.0.1
+// Ganti input server value
 $html = preg_replace(
-    '/<input[^>]*name=["\']auth\[server\]["\'][^>]*>/i',
-    '<input type="hidden" name="auth[server]" value="172.18.0.1">',
+    '/(<input[^>]*name=["\']auth\[server\]["\'][^>]*value=["\'])[^"\']*(["\'][^>]*>)/i',
+    '${1}172.18.0.1${2}',
     $html
 );
-
-// Hide row yang contain label "Server" di form login
-// Adminer pakai <tr><th>Server</th><td><input...></td></tr>
 $html = preg_replace(
-    '/<tr[^>]*>\s*<th[^>]*>[^<]*[Ss]erver[^<]*<\/th>.*?<\/tr>/s',
-    '',
+    '/(<input[^>]*value=["\'])[^"\']*(["\'][^>]*name=["\']auth\[server\]["\'][^>]*>)/i',
+    '${1}172.18.0.1${2}',
     $html
 );
 
@@ -61,18 +57,60 @@ span.null{color:rgba(255,0,255,.5)!important;font-style:italic!important}
 ::-webkit-scrollbar-thumb{background:rgba(0,255,255,.3);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(0,255,255,.6)}
 #footer{color:var(--td)!important;border-top:1px solid rgba(0,255,255,.1)!important;padding:10px!important;font-size:11px!important;text-align:center!important}
+
+/* Hide server row - semua kemungkinan */
+tr:has(input[name="auth[server]"]) { display: none !important; }
 </style>';
 
+// JS - paling reliable karena jalan setelah DOM ready
 $js = '<script>
-document.addEventListener("DOMContentLoaded", function() {
-    var h1 = document.querySelector("h1");
-    if (h1) h1.innerHTML = "&#9889; BAYYZ DB Manager";
-});
+(function() {
+    function hideServer() {
+        // Cari semua input dengan name auth[server]
+        var inputs = document.querySelectorAll("input[name=\'auth[server]\']");
+        inputs.forEach(function(inp) {
+            inp.value = "172.18.0.1";
+            inp.type = "hidden";
+            // Sembunyikan parent tr
+            var el = inp;
+            while (el && el.tagName !== "TR") el = el.parentElement;
+            if (el) el.style.setProperty("display", "none", "important");
+            // Sembunyikan th sebelumnya juga
+            var prevTr = el ? el.previousElementSibling : null;
+            if (prevTr && prevTr.tagName === "TR") {
+                var th = prevTr.querySelector("th");
+                if (th && (th.textContent.indexOf("Server") >= 0 || th.textContent.indexOf("server") >= 0)) {
+                    prevTr.style.setProperty("display", "none", "important");
+                }
+            }
+        });
+
+        // Cari semua <th> yang teksnya "Server" dan hide row-nya
+        document.querySelectorAll("th, td label").forEach(function(el) {
+            var txt = el.textContent.trim();
+            if (txt === "Server" || txt === "server") {
+                var tr = el.closest("tr");
+                if (tr) tr.style.setProperty("display", "none", "important");
+            }
+        });
+
+        // Branding
+        var h1 = document.querySelector("h1");
+        if (h1) h1.innerHTML = "&#9889; BAYYZ DB Manager";
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", hideServer);
+    } else {
+        hideServer();
+    }
+    // Jalankan lagi setelah 100ms untuk antisipasi render delay
+    setTimeout(hideServer, 100);
+    setTimeout(hideServer, 500);
+})();
 </script>';
 
 $html = str_replace('<title>Adminer</title>', '<title>⚡ BAYYZ DB Manager</title>', $html);
 $html = str_replace('</head>', $css . '</head>', $html);
 $html = str_replace('</body>', $js . '</body>', $html);
-// DEBUG - lihat HTML mentah
-file_put_contents('/home/container/debug_adminer.html', $html);
 echo $html;
