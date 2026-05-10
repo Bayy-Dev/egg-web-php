@@ -1,6 +1,5 @@
 <?php
 // BAYYZ DB Manager - Cyber Neon Theme
-// Server field hidden via CSS/JS only - no PHP redirect
 
 $core = sys_get_temp_dir() . "/adminer_latest.php";
 if (!file_exists($core) || (time() - filemtime($core)) > 86400) {
@@ -14,6 +13,22 @@ if (!file_exists($core)) {
 ob_start();
 require $core;
 $html = ob_get_clean();
+
+// ===== HIDE SERVER FIELD VIA PHP =====
+// Ganti input server jadi hidden dengan value 172.18.0.1
+$html = preg_replace(
+    '/<input[^>]*name=["\']auth\[server\]["\'][^>]*>/i',
+    '<input type="hidden" name="auth[server]" value="172.18.0.1">',
+    $html
+);
+
+// Hide row yang contain label "Server" di form login
+// Adminer pakai <tr><th>Server</th><td><input...></td></tr>
+$html = preg_replace(
+    '/<tr[^>]*>\s*<th[^>]*>[^<]*[Ss]erver[^<]*<\/th>.*?<\/tr>/s',
+    '',
+    $html
+);
 
 $css = '<style>
 @import url("https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap");
@@ -50,25 +65,8 @@ span.null{color:rgba(255,0,255,.5)!important;font-style:italic!important}
 
 $js = '<script>
 document.addEventListener("DOMContentLoaded", function() {
-    // Branding
     var h1 = document.querySelector("h1");
     if (h1) h1.innerHTML = "&#9889; BAYYZ DB Manager";
-
-    // Hide & force server field
-    var serverInput = document.querySelector("input[name=\'auth[server]\']");
-    if (serverInput) {
-        serverInput.value = "172.18.0.1";
-        var tr = serverInput.closest("tr");
-        if (tr) tr.style.cssText = "display:none!important";
-    }
-
-    // Hide label "Server" juga
-    document.querySelectorAll("td, th").forEach(function(el) {
-        if (el.textContent.trim() === "Server") {
-            var tr = el.closest("tr");
-            if (tr) tr.style.cssText = "display:none!important";
-        }
-    });
 });
 </script>';
 
